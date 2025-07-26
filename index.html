@@ -126,7 +126,7 @@
             document.body.appendChild(renderer.domElement);
             
             // 큐브 생성 (안쪽에서 보이도록)
-            const geometry = new THREE.BoxGeometry(4, 4, 4);
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
             const materials = [
                 new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.BackSide }),
                 new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.BackSide }),
