@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Babylon.js VR with Image</title>
+  <title>Babylon.js VR with Image and Sphere</title>
   <style>
     html, body { margin: 0; padding: 0; overflow: hidden; height: 100%; }
     canvas { width: 100%; height: 100%; display: block; }
@@ -18,14 +18,14 @@
 
     // 기본 조명
     const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    light.intensity = 1.5;
 
-    // 구 생성 (카메라 앞쪽에 배치)
-    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 1}, scene);
-    sphere.position = new BABYLON.Vector3(0, 1.6, -3);
+    // 구 생성 (초기에는 숨김)
+    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 2}, scene);
+    sphere.isVisible = false;
 
-    // GUI 생성
+    // GUI 이미지 생성
     const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
-
     const image = new BABYLON.GUI.Image("girlImage", "girl.png");
     image.width = "150px";
     image.height = "150px";
@@ -35,17 +35,25 @@
     image.paddingLeft = 10;
     advancedTexture.addControl(image);
 
-    // WebXR VR 모드 진입
+    // WebXR VR 모드 진입 및 구 위치 설정
     scene.createDefaultXRExperienceAsync().then((xrHelper) => {
+      const xrCamera = xrHelper.baseExperience.camera;
+
+      // 구를 XR 카메라 앞쪽에 배치
+      sphere.position = xrCamera.position.add(new BABYLON.Vector3(0, 0, -2));
+      sphere.isVisible = true;
+
       xrHelper.baseExperience.enterXRAsync("immersive-vr", "local-floor").then(() => {
         console.log("Entered immersive VR mode");
       });
     });
 
+    // 렌더 루프
     engine.runRenderLoop(() => {
       scene.render();
     });
 
+    // 창 크기 변경 대응
     window.addEventListener("resize", () => {
       engine.resize();
     });
