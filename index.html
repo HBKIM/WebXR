@@ -2,74 +2,69 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>WebXR 정육면체 뷰어</title>
+    <title>갤럭시 S9 WebXR 테스트</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             font-family: Arial, sans-serif;
-            touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         #girl-image {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 100px;
-            height: 100px;
+            top: 15px;
+            right: 15px;
+            width: 80px;
+            height: 80px;
             z-index: 1000;
             border: 2px solid white;
             border-radius: 50%;
         }
         #enterVR {
             position: absolute;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            padding: 12px 24px;
-            background-color: #4CAF50;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #4CAF50, #2E7D32);
             color: white;
             border: none;
-            border-radius: 25px;
-            cursor: pointer;
+            border-radius: 30px;
             font-size: 18px;
+            font-weight: bold;
             z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        #enterVR:hover {
-            background-color: #45a049;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 80%;
+            max-width: 300px;
         }
         #info {
             position: absolute;
-            bottom: 80px;
+            bottom: 100px;
             left: 50%;
             transform: translateX(-50%);
             color: white;
-            background-color: rgba(0,0,0,0.7);
-            padding: 12px;
-            border-radius: 10px;
+            background-color: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 15px;
             text-align: center;
             z-index: 1000;
-            width: 80%;
-            max-width: 400px;
+            width: 85%;
+            max-width: 350px;
             font-size: 16px;
+            line-height: 1.5;
         }
-        #unsupported {
-            display: none;
+        #status {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            top: 15px;
+            left: 15px;
             color: white;
-            background-color: rgba(255,0,0,0.7);
-            padding: 20px;
+            background-color: rgba(0,0,0,0.5);
+            padding: 8px 12px;
             border-radius: 10px;
-            text-align: center;
             z-index: 1000;
-            width: 80%;
+            font-size: 14px;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
@@ -77,122 +72,151 @@
 </head>
 <body>
     <img id="girl-image" src="girl.png" alt="Girl">
-    <div id="info">정육면체 중앙에 위치해 있습니다.<br>VR 모드를 시작하려면 아래 버튼을 누르세요.</div>
-    <div id="unsupported">죄송합니다. 이 기기/브라우저는 WebXR VR을 지원하지 않습니다.<br>최신 버전의 Chrome 또는 Firefox를 사용해 보세요.</div>
+    <div id="status">기기 검사 중...</div>
+    <div id="info">갤럭시 S9 최적화 버전<br>VR 모드 시작 버튼을 눌러주세요</div>
     <button id="enterVR">VR 모드 시작</button>
 
     <script>
-        // Three.js와 WebXR 변수
-        let cube = null;
-        let scene = null;
-        let renderer = null;
-        let camera = null;
-        let vrButton = null;
-
-        // WebXR 지원 여부 확인
-        function checkXRSupport() {
-            if (!navigator.xr) {
-                document.getElementById('unsupported').style.display = 'block';
-                document.getElementById('enterVR').style.display = 'none';
-                document.getElementById('info').style.display = 'none';
-                return false;
-            }
-            return true;
+        // 상태 표시 업데이트
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            console.log(message);
         }
 
-        // 장면 초기화 함수
-        function initScene() {
-            const canvas = document.createElement('canvas');
-            document.body.appendChild(canvas);
-            
-            // Three.js 장면 설정
-            scene = new THREE.Scene();
-            
-            // 카메라 설정
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 1.6, 0); // 사람 눈 높이로 조정
-            
-            // 렌더러 설정
-            renderer = new THREE.WebGLRenderer({ 
-                canvas, 
-                antialias: true,
-                alpha: true
+        // Three.js 변수
+        let scene, renderer, camera, cube;
+        let xrSession = null;
+
+        // WebXR 지원 여부 체크 (갤럭시 S9 특화)
+        function checkXRSupport() {
+            return new Promise((resolve) => {
+                if (!navigator.xr) {
+                    updateStatus("WebXR 미지원 브라우저");
+                    resolve(false);
+                    return;
+                }
+
+                navigator.xr.isSessionSupported('immersive-vr')
+                    .then(supported => {
+                        if (supported) {
+                            updateStatus("WebXR VR 지원됨");
+                            resolve(true);
+                        } else {
+                            updateStatus("immersive-vr 모드 미지원");
+                            resolve(false);
+                        }
+                    })
+                    .catch(error => {
+                        console.error("XR 지원 체크 오류:", error);
+                        updateStatus("XR 지원 확인 불가");
+                        resolve(false);
+                    });
             });
-            renderer.setPixelRatio(window.devicePixelRatio);
+        }
+
+        // 장면 초기화
+        async function initScene() {
+            updateStatus("장면 초기화 중...");
+
+            // Three.js 설정
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 1.6, 0); // 사람 눈 높이
+
+            // 렌더러 설정 (갤럭시 S9 최적화)
+            renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                alpha: true,
+                powerPreference: "high-performance"
+            });
+            renderer.setPixelRatio(Math.min(1.5, window.devicePixelRatio)); // S9에서 과도한 픽셀 비율 방지
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
-            
-            // 정육면체 생성 (안쪽에서 보이도록 뒤집음)
-            const geometry = new THREE.BoxGeometry(10, 10, 10);
+            document.body.appendChild(renderer.domElement);
+
+            // 정육면체 생성 (큰 박스 안에 있는 효과)
+            const geometry = new THREE.BoxGeometry(20, 20, 20);
             const materials = [
-                new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.BackSide }), // 오른쪽
-                new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.BackSide }), // 왼쪽
-                new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.BackSide }), // 위쪽
-                new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.BackSide }), // 아래쪽
-                new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.BackSide }), // 앞쪽
-                new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.BackSide })  // 뒤쪽
+                new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.BackSide }), // 빨강
+                new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.BackSide }), // 초록
+                new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.BackSide }), // 파랑
+                new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.BackSide }), // 노랑
+                new THREE.MeshBasicMaterial({ color: 0xff00ff, side: THREE.BackSide }), // 분홍
+                new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.BackSide })  // 시안
             ];
-            
             cube = new THREE.Mesh(geometry, materials);
             scene.add(cube);
-            
-            // VR 버튼 생성
-            vrButton = THREE.VRButton.createButton(renderer);
+
+            // VR 버튼 설정
+            const vrButton = THREE.VRButton.createButton(renderer);
             vrButton.id = 'real-vr-button';
-            vrButton.style.display = 'none'; // 처음에는 숨김
+            vrButton.style.display = 'none';
             document.body.appendChild(vrButton);
-            
-            // VR 모드 시작 버튼 이벤트
+
+            // VR 버튼 이벤트 리스너
             document.getElementById('enterVR').addEventListener('click', function() {
-                // 실제 VR 버튼 클릭 트리거
+                updateStatus("VR 모드 시작 시도...");
                 vrButton.click();
             });
-            
-            // XR 세션 상태 변경 감지
+
+            // XR 세션 이벤트
             renderer.xr.addEventListener('sessionstart', () => {
+                xrSession = renderer.xr.getSession();
+                updateStatus("VR 모드 활성화");
                 document.getElementById('info').textContent = "VR 모드가 활성화되었습니다!\n기기를 움직여 보세요.";
                 document.getElementById('enterVR').textContent = "VR 모드 종료";
             });
-            
+
             renderer.xr.addEventListener('sessionend', () => {
-                document.getElementById('info').textContent = "VR 모드가 종료되었습니다.\n다시 시작하려면 버튼을 누르세요.";
+                updateStatus("VR 모드 종료");
+                document.getElementById('info').textContent = "VR 모드가 종료되었습니다.\n버튼을 눌러 다시 시작할 수 있습니다.";
                 document.getElementById('enterVR').textContent = "VR 모드 시작";
+                xrSession = null;
             });
+
+            // 창 크기 조정
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // 애니메이션 루프 시작
+            renderer.setAnimationLoop(() => {
+                renderer.render(scene, camera);
+            });
+
+            updateStatus("로드 완료 - 버튼을 눌러 시작");
+        }
+
+        // 초기 로드 시 실행
+        async function initialize() {
+            updateStatus("기기 확인 중...");
             
-            // 창 크기 조정 이벤트
-            window.addEventListener('resize', onWindowResize);
-            
-            // 애니메이션 시작
-            renderer.setAnimationLoop(render);
-        }
-        
-        // 창 크기 변경 처리
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-        
-        // 렌더링 함수
-        function render() {
-            renderer.render(scene, camera);
-        }
-        
-        // 페이지 로드 시 초기화
-        window.addEventListener('load', function() {
-            if (checkXRSupport()) {
-                initScene();
-                
-                // WebXR 세션 지원 확인
-                navigator.xr.isSessionSupported('immersive-vr').then(supported => {
-                    if (!supported) {
-                        document.getElementById('unsupported').style.display = 'block';
-                        document.getElementById('enterVR').style.display = 'none';
-                        document.getElementById('info').style.display = 'none';
-                    }
-                });
+            const isSupported = await checkXRSupport();
+            if (!isSupported) {
+                document.getElementById('info').innerHTML = 
+                    "이 기기/브라우저는 WebXR VR을 지원하지 않습니다.<br><br>" +
+                    "갤럭시 S9 사용자:<br>" +
+                    "1. Chrome 최신 버전 설치<br>" +
+                    "2. chrome://flags 에서 'WebXR' 검색 후 활성화<br>" +
+                    "3. 기기 재시작 후 다시 시도";
+                document.getElementById('enterVR').style.display = 'none';
+                return;
             }
-        });
+
+            try {
+                await initScene();
+            } catch (error) {
+                console.error("초기화 오류:", error);
+                updateStatus("초기화 오류: " + error.message);
+                document.getElementById('info').textContent = 
+                    "프로그램 초기화 중 오류가 발생했습니다. 콘솔을 확인해주세요.";
+            }
+        }
+
+        // 페이지 로드 시 초기화 실행
+        window.addEventListener('load', initialize);
     </script>
 </body>
 </html>
