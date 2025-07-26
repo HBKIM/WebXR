@@ -126,7 +126,7 @@
             document.body.appendChild(renderer.domElement);
             
             // 큐브 생성 (안쪽에서 보이도록)
-            const geometry = new THREE.BoxGeometry(10, 10, 10);
+            const geometry = new THREE.BoxGeometry(4, 4, 4);
             const materials = [
                 new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.BackSide }),
                 new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.BackSide }),
@@ -136,6 +136,7 @@
                 new THREE.MeshBasicMaterial({ color: 0x00ffff, side: THREE.BackSide })
             ];
             const cube = new THREE.Mesh(geometry, materials);
+            cube.position.set(0, 0, -6); // 더 멀리 배치
             scene.add(cube);
             
             return { scene, camera, renderer };
